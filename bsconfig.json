@@ -1,7 +1,12 @@
 {
-  "name": "bs-date-fns",
-  "bsc-flags": ["-bs-super-errors"],
+  "name": "@atvero/bs-date-fns",
+  "bsc-flags": [
+    "-bs-super-errors"
+  ],
   "refmt": 3,
+  "reason": {
+    "react-jsx": 3
+  },
   "sources": [
     {
       "dir": "src"

@@ -1,542 +1,271 @@
-type interval = {
-  start: Js.Date.t,
-  [@bs.as "end"]
-  end_: Js.Date.t,
+let flip = (f) => (a, b) => f(b, a);
+let handleOptBool = optBool => optBool
+  |> Js.Nullable.fromOption;
+
+type timeUnit = | Second | Minute | Hour | Day | Month | Year;
+type partialMethod = | Floor | Ceil | Round;
+
+let timeUnitToString = fun
+  | Second => "s"
+  | Minute => "m"
+  | Hour => "h"
+  | Day => "d"
+  | Month => "M"
+  | Year => "Y";
+let partialMethodToString = fun
+  | Floor => "floor"
+  | Ceil => "ceil"
+  | Round => "round";
+
+[@bs.module] external internal_closestIndexTo : (Js.Date.t, array(Js.Date.t)) => int = "date-fns/closest_index_to";
+let closestIndexTo = flip(internal_closestIndexTo);
+[@bs.module] external internal_closestTo : (Js.Date.t, array(Js.Date.t)) => Js.Date.t = "date-fns/closest_to";
+let closestTo = flip(internal_closestTo);
+[@bs.module] external compareAsc : (Js.Date.t, Js.Date.t) => int = "date-fns/compare_asc";
+[@bs.module] external compareDesc : (Js.Date.t, Js.Date.t) => int = "date-fns/compare_desc";
+type distanceInWordsOptions = {.
+  "includeSeconds": Js.Nullable.t(bool),
+  "addSuffix": Js.Nullable.t(bool),
 };
-
-type locale;
-
-// Common Helpers
-[@bs.module "date-fns/closestIndexTo"]
-external closestIndexTo: (Js.Date.t, array(Js.Date.t)) => int = "default";
-[@bs.module "date-fns/closestTo"]
-external closestTo: (Js.Date.t, array(Js.Date.t)) => Js.Date.t = "default";
-[@bs.module "date-fns/compareAsc"] external compareAsc: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/compareDesc"] external compareDesc: (Js.Date.t, Js.Date.t) => int = "default";
-
-[@bs.module "date-fns/format"] external format: (Js.Date.t, string) => string = "default";
-type formatOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-  firstWeekContainsDate: option(int),
-  useAdditionalWeekYearTokens: option(bool),
-  useAdditionalDayOfYearTokens: option(bool),
+[@bs.module] external internal_distanceInWords : (Js.Date.t, Js.Date.t, distanceInWordsOptions) => string = "date-fns/distance_in_words";
+let distanceInWords = (~includeSeconds=?, ~addSuffix=?, dateToCompare, date) =>
+  internal_distanceInWords(dateToCompare, date, {
+    "includeSeconds": includeSeconds |> handleOptBool,
+    "addSuffix": addSuffix |> handleOptBool
+  });
+type distanceInWordsStrictOptions = {.
+  "addSuffix": Js.Nullable.t(bool),
+  "unit": Js.Nullable.t(string),
+  "partialMethod": Js.Nullable.t(string)
 };
-[@bs.module "date-fns/format"] external formatOpt: (Js.Date.t, string, formatOptions) => string = "default";
-[@bs.module "date-fns/formatDistance"] external formatDistance: (Js.Date.t, Js.Date.t) => string = "default";
-type formatDistanceOptions = {
-  includeSeconds: option(bool),
-  addSuffix: option(bool),
-  locale: option(locale),
+[@bs.module] external internal_distanceInWordsStrict : (Js.Date.t, Js.Date.t, distanceInWordsStrictOptions) => string = "date-fns/distance_in_words_strict";
+let distanceInWordsStrict = (~addSuffix=?, ~unit=?, ~partialMethod=?, dateToCompare, date) =>
+  internal_distanceInWordsStrict(dateToCompare, date, {
+    "addSuffix": addSuffix |> handleOptBool,
+    "unit": unit
+      |> Js.Option.map([@bs] unit => timeUnitToString(unit))
+      |> Js.Nullable.fromOption,
+    "partialMethod": partialMethod
+      |> Js.Option.map([@bs] partialMethod => partialMethodToString(partialMethod))
+      |> Js.Nullable.fromOption
+  });
+type distanceInWordsToNowOptions = {.
+  "includeSeconds": Js.Nullable.t(bool),
+  "addSuffix": Js.Nullable.t(bool)
 };
-[@bs.module "date-fns/formatDistance"]
-external formatDistanceOpt: (Js.Date.t, Js.Date.t, formatDistanceOptions) => string =
-  "default";
-[@bs.module "date-fns/formatDistanceStrict"]
-external formatDistanceStrict: (Js.Date.t, Js.Date.t) => string = "default";
-type formatDistanceStrictOptions = {
-  addSuffix: option(bool),
-  unit: option(string),
-  roundingMethod: option(string),
-  locale: option(locale),
+[@bs.module] external internal_distanceInWordsToNow : (Js.Date.t, distanceInWordsToNowOptions) => string = "date-fns/distance_in_words_to_now";
+let distanceInWordsToNow = (~includeSeconds=?, ~addSuffix=?, date) =>
+  internal_distanceInWordsToNow(date, {
+    "includeSeconds": includeSeconds |> handleOptBool,
+    "addSuffix": addSuffix |> handleOptBool
+  });
+
+[@bs.module] external internal_format : (Js.Date.t, string) => string = "date-fns/format";
+let format = flip(internal_format);
+[@bs.module] external internal_isAfter : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_after";
+let isAfter = flip(internal_isAfter);
+[@bs.module] external internal_isBefore : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_before";
+let isBefore = flip(internal_isBefore);
+[@bs.module] external isEqual : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_equal";
+[@bs.module] external isFuture : Js.Date.t => bool = "date-fns/is_future";
+[@bs.module] external isPast : Js.Date.t => bool = "date-fns/is_past";
+[@bs.module] external isValid : Js.Date.t => bool = "date-fns/is_valid";
+[@bs.module] [@bs.splice] external max : array(Js.Date.t) => Js.Date.t = "date-fns/max";
+[@bs.module] [@bs.splice] external min : array(Js.Date.t) => Js.Date.t = "date-fns/min";
+type parseOptions = {.
+  "additionalDigits": Js.Nullable.t(int)
 };
-[@bs.module "date-fns/formatDistanceStrict"]
-external formatDistanceStrictOpt: (Js.Date.t, Js.Date.t, formatDistanceStrictOptions) => string =
-  "default";
-[@bs.module "date-fns/formatDistanceToNow"] external formatDistanceToNow: Js.Date.t => string = "default";
-type formatDistanceToNowOptions = {
-  includeSeconds: option(bool),
-  addSuffix: option(bool),
-  locale: option(locale),
-};
-[@bs.module "date-fns/formatDistanceToNow"]
-external formatDistanceToNowOpt: (Js.Date.t, formatDistanceToNowOptions) => string =
-  "default";
-external formatISO: Js.Date.t => string = "date-fns/formatISO";
-type formatISOOptions = {
-  format: option(string),
-  representation: option(string),
-};
-external formatISOOpt: (Js.Date.t, formatISOOptions) => string = "date-fns/formatISO";
-external formatISO9075: Js.Date.t => string = "date-fns/formatISO9075";
-type formatISO9075Options = {
-  format: option(string),
-  representation: option(string),
-};
-external formatISO9075Opt: (Js.Date.t, formatISO9075Options) => string = "date-fns/formatISO9075";
+[@bs.module] external internal_parseFloat : float => parseOptions => Js.Date.t = "date-fns/parse";
+let parseFloat = (~additionalDigits=?, float) => internal_parseFloat(float, {
+  "additionalDigits": additionalDigits |> Js.Nullable.fromOption
+});
+[@bs.module] external internal_parseString : string => parseOptions => Js.Date.t = "date-fns/parse";
+let parseString = (~additionalDigits=?, string) => internal_parseString(string, {
+  "additionalDigits": additionalDigits |> Js.Nullable.fromOption
+});
+[@bs.module] external areRangesOverlapping : (Js.Date.t, Js.Date.t, Js.Date.t, Js.Date.t) => bool = "date-fns/are_ranges_overlapping";
+[@bs.module] external getOverlappingDaysInRanges : (Js.Date.t, Js.Date.t, Js.Date.t, Js.Date.t) => float = "date-fns/get_overlapping_days_in_ranges";
+[@bs.module] external internal_isWithinRange : (Js.Date.t, Js.Date.t, Js.Date.t) => bool = "date-fns/is_within_range";
+let isWithinRange = (startDate, endDate, date) => internal_isWithinRange(date, startDate, endDate);
 
-[@bs.module "date-fns/formatRFC3339"] external formatRFC3339: Js.Date.t => string = "default";
-type formatRFC3339Options = {fractionDigits: option(int)};
-[@bs.module "date-fns/formatRFC3339"]
-external formatRFC3339Options: (Js.Date.t, formatRFC3339Options) => string =
-  "default";
-[@bs.module "date-fns/formatRFC7231"] external formatRFC7231: Js.Date.t => string = "default";
-[@bs.module "date-fns/formatRelative"] external formatRelative: (Js.Date.t, Js.Date.t) => string = "default";
-type formatRelativeOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-};
-[@bs.module "date-fns/formatRelative"]
-external formatRelativeOpt: (Js.Date.t, Js.Date.t, formatRelativeOptions) => string =
-  "default";
-[@bs.module "date-fns/isAfter"] external isAfter: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isBefore"] external isBefore: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isDate"] external isDate: 'a => bool = "default";
-[@bs.module "date-fns/isEqual"] external isEqual: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isFuture"] external isFuture: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isPast"] external isPast: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isValid"] external isValid: 'a => bool = "default";
-[@bs.module "date-fns/lightFormat"] external lightFormat: (Js.Date.t, string) => string = "default";
-[@bs.module "date-fns/max"] external max: array(Js.Date.t) => Js.Date.t = "default";
-[@bs.module "date-fns/min"] external min: array(Js.Date.t) => Js.Date.t = "default";
-[@bs.module "date-fns/parse"] external parse: (string, string, Js.Date.t) => Js.Date.t = "default";
-type parseOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-  firstWeekContainsDate: option(int),
-  useAdditionalWeekYearTokens: option(bool),
-  useAdditionalDayOfYearTokens: option(bool),
-};
-[@bs.module "date-fns/parse"]
-external parseOpt: (string, string, Js.Date.t, parseOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/parseISO"] external parseISO: string => Js.Date.t = "default";
-type parseISOOptions = {additionalDigits: option(int)};
-[@bs.module "date-fns/parseISO"] external parseISOOpt: (string, parseISOOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/parseJSON"] external parseJSONString: string => Js.Date.t = "default";
-[@bs.module "date-fns/parseJSON"] external parseJSONFloat: float => Js.Date.t = "default";
-[@bs.module "date-fns/parseJSON"] external parseJSONInt: int => Js.Date.t = "default";
-type setOptions = {
-  year: option(int),
-  month: option(int),
-  date: option(int),
-  hours: option(int),
-  minutes: option(int),
-  seconds: option(int),
-  milliseconds: option(int),
-};
-[@bs.module "date-fns/set"] external set: (Js.Date.t, setOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/toDate"] external toDateFloat: float => Js.Date.t = "default";
-[@bs.module "date-fns/toDate"] external toDateInt: int => Js.Date.t = "default";
+[@bs.module] external getTime : Js.Date.t => float = "date-fns/get_time";
+[@bs.module] external getMilliseconds : (Js.Date.t) => float = "date-fns/get_milliseconds";
+[@bs.module] external getSeconds : (Js.Date.t) => float = "date-fns/get_seconds";
+[@bs.module] external getMinutes : (Js.Date.t) => float = "date-fns/get_minutes";
+[@bs.module] external getHours : (Js.Date.t) => float = "date-fns/get_hours";
+[@bs.module] external getDate : (Js.Date.t) => float = "date-fns/get_date";
+[@bs.module] external getDayOfYear : (Js.Date.t) => float = "date-fns/get_day_of_year";
+[@bs.module] external getDay : (Js.Date.t) => float = "date-fns/get_day";
+[@bs.module] external getISODay : (Js.Date.t) => float = "date-fns/get_iso_day";
+[@bs.module] external getISOWeek : (Js.Date.t) => float = "date-fns/get_iso_week";
+[@bs.module] external getDaysInMonth : (Js.Date.t) => float = "date-fns/get_days_in_month";
+[@bs.module] external getMonth : (Js.Date.t) => float = "date-fns/get_month";
+[@bs.module] external getQuarter : (Js.Date.t) => float = "date-fns/get_quarter";
+[@bs.module] external getDaysInYear : (Js.Date.t) => float = "date-fns/get_days_in_year";
+[@bs.module] external getYear : (Js.Date.t) => float = "date-fns/get_year";
+[@bs.module] external getISOWeeksInYear : (Js.Date.t) => float = "date-fns/get_iso_weeks_in_year";
+[@bs.module] external getISOYear : (Js.Date.t) => float = "date-fns/get_iso_year";
 
-// Interval Helpers
-[@bs.module "date-fns/areIntervalsOverlapping"]
-external areIntervalsOverlapping: (Js.Date.t, Js.Date.t) => bool =
-  "default";
-[@bs.module "date-fns/eachDayOfInterval"]
-external eachDayOfInterval: interval => array(Js.Date.t) = "default";
-type eachDayOfIntervalOptions = {step: option(int)};
-[@bs.module "date-fns/eachDayOfInterval"]
-external eachDayOfIntervalOpt: (interval, eachDayOfIntervalOptions) => array(Js.Date.t) =
-  "default";
-[@bs.module "date-fns/eachWeekOfInterval"]
-external eachWeekOfInterval: interval => array(Js.Date.t) = "default";
-type eachWeekOfIntervalOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-};
-[@bs.module "date-fns/eachWeekOfInterval"]
-external eachWeekOfIntervalOpt: (interval, eachWeekOfIntervalOptions) => array(Js.Date.t) =
-  "default";
-[@bs.module "date-fns/eachWeekendOfInterval"]
-external eachWeekendOfInterval: interval => array(Js.Date.t) = "default";
-[@bs.module "date-fns/getOverlappingDaysInIntervals"]
-external getOverlappingDaysInIntervals: (interval, interval) => int =
-  "default";
-[@bs.module "date-fns/getOverlappingDaysInIntervals"]
-external getOverlappingDaysInIntervalsf: (interval, interval) => float =
-  "default";
-[@bs.module "date-fns/isWithinInterval"]
-external isWithinInterval: (Js.Date.t, interval) => bool = "default";
+[@bs.module] external internal_setMilliseconds : (Js.Date.t, float) => Js.Date.t = "date-fns/set_milliseconds";
+[@bs.module] external internal_setSeconds : (Js.Date.t, float) => Js.Date.t = "date-fns/set_seconds";
+[@bs.module] external internal_setMinutes : (Js.Date.t, float) => Js.Date.t = "date-fns/set_minutes";
+[@bs.module] external internal_setHours : (Js.Date.t, float) => Js.Date.t = "date-fns/set_hours";
+[@bs.module] external internal_setDate : (Js.Date.t, float) => Js.Date.t = "date-fns/set_date";
+[@bs.module] external internal_setDayOfYear : (Js.Date.t, float) => Js.Date.t = "date-fns/set_day_of_year";
+[@bs.module] external internal_setDay : (Js.Date.t, float) => Js.Date.t = "date-fns/set_day";
+[@bs.module] external internal_setISODay : (Js.Date.t, float) => Js.Date.t = "date-fns/set_iso_day";
+[@bs.module] external internal_setISOWeek : (Js.Date.t, float) => Js.Date.t = "date-fns/set_iso_week";
+[@bs.module] external internal_setMonth : (Js.Date.t, float) => Js.Date.t = "date-fns/set_month";
+[@bs.module] external internal_setQuarter : (Js.Date.t, float) => Js.Date.t = "date-fns/set_quarter";
+[@bs.module] external internal_setYear : (Js.Date.t, float) => Js.Date.t = "date-fns/set_year";
+[@bs.module] external internal_setISOYear : (Js.Date.t, float) => Js.Date.t = "date-fns/set_iso_year";
 
-// Timestamp Helpers
-[@bs.module "date-fns/fromUnixTime"] external fromUnixTime: float => Js.Date.t = "default";
-[@bs.module "date-fns/getTime"] external getTime: Js.Date.t => float = "default";
-[@bs.module "date-fns/getUnixTime"] external getUnixTime: Js.Date.t => float = "default";
+let setMilliseconds = flip(internal_setMilliseconds);
+let setSeconds = flip(internal_setSeconds);
+let setMinutes = flip(internal_setMinutes);
+let setHours = flip(internal_setHours);
+let setDay = flip(internal_setDay);
+let setISODay = flip(internal_setISODay);
+let setDate = flip(internal_setDate);
+let setDayOfYear = flip(internal_setDayOfYear);
+let setISOWeek = flip(internal_setISOWeek);
+let setMonth = flip(internal_setMonth);
+let setQuarter = flip(internal_setQuarter);
+let setYear = flip(internal_setYear);
+let setISOYear = flip(internal_setISOYear);
 
-// Millisecond Helpers
-[@bs.module "date-fns/addMilliseconds"] external addMilliseconds: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addMilliseconds"]
-external addMillisecondsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInMilliseconds"]
-external differenceInMilliseconds: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInMilliseconds"]
-external differenceInMillisecondsf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/getMilliseconds"] external getMilliseconds: Js.Date.t => int = "default";
-[@bs.module "date-fns/getMilliseconds"] external getMillisecondsf: Js.Date.t => float = "default";
-[@bs.module "date-fns/setMilliseconds"] external setMilliseconds: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setMilliseconds"]
-external setMillisecondsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/subMilliseconds"] external subMilliseconds: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subMilliseconds"]
-external subMillisecondsf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external internal_subMilliseconds : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_milliseconds";
+[@bs.module] external internal_subSeconds : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_seconds";
+[@bs.module] external internal_subMinutes : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_minutes";
+[@bs.module] external internal_subHours : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_hours";
+[@bs.module] external internal_subDays : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_days";
+[@bs.module] external internal_subWeeks : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_weeks";
+[@bs.module] external internal_subMonths : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_months";
+[@bs.module] external internal_subQuarters : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_quarters";
+[@bs.module] external internal_subYears : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_years";
+[@bs.module] external internal_subISOYears : (Js.Date.t, float) => Js.Date.t = "date-fns/sub_iso_years";
 
-// Second Helpers
-[@bs.module "date-fns/addSeconds"] external addSeconds: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addSeconds"] external addSecondsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInSeconds"]
-external differenceInSeconds: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInSeconds"]
-external differenceInSecondsf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/endOfSecond"] external endOfSecond: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getSeconds"] external getSeconds: Js.Date.t => int = "default";
-[@bs.module "date-fns/getSeconds"] external getSecondsf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameSecond"] external isSameSecond: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisSecond"] external isThisSecond: Js.Date.t => bool = "default";
-[@bs.module "date-fns/setSeconds"] external setSeconds: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setSeconds"] external setSecondsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfSecond"] external startOfSecond: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subSeconds"] external subSeconds: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subSeconds"] external subSecondsf: (Js.Date.t, float) => Js.Date.t = "default";
+let subMilliseconds = flip(internal_subMilliseconds);
+let subSeconds = flip(internal_subSeconds);
+let subMinutes = flip(internal_subMinutes);
+let subHours = flip(internal_subHours);
+let subDays = flip(internal_subDays);
+let subWeeks = flip(internal_subWeeks);
+let subMonths = flip(internal_subMonths);
+let subQuarters = flip(internal_subQuarters);
+let subYears = flip(internal_subYears);
+let subISOYears = flip(internal_subISOYears);
 
-// Minute Helpers
-[@bs.module "date-fns/addMinutes"] external addMinutes: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addMinutes"] external addMinutesf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInMinutes"]
-external differenceInMinutes: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInMinutes"]
-external differenceInMinutesf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/endOfMinute"] external endOfMinute: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getMinutes"] external getMinutes: Js.Date.t => int = "default";
-[@bs.module "date-fns/getMinutes"] external getMinutesf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameMinute"] external isSameMinute: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisMinute"] external isThisMinute: Js.Date.t => bool = "default";
-[@bs.module "date-fns/roundToNearestMinutes"]
-external roundToNearestMinutes: Js.Date.t => Js.Date.t = "default";
-type roundToNearestMinutesOptions = {nearestTo: option(int)};
-[@bs.module "date-fns/roundToNearestMinutes"]
-external roundToNearestMinutesOpt: (Js.Date.t, roundToNearestMinutesOptions) => Js.Date.t =
-  "default";
-[@bs.module "date-fns/setMinutes"] external setMinutes: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfMinute"] external startOfMinute: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subMinutes"] external subMinutes: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subMinutes"] external subMinutesf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external internal_addMilliseconds : (Js.Date.t, float) => Js.Date.t = "date-fns/add_milliseconds";
+[@bs.module] external internal_addSeconds : (Js.Date.t, float) => Js.Date.t = "date-fns/add_seconds";
+[@bs.module] external internal_addMinutes : (Js.Date.t, float) => Js.Date.t = "date-fns/add_minutes";
+[@bs.module] external internal_addHours : (Js.Date.t, float) => Js.Date.t = "date-fns/add_hours";
+[@bs.module] external internal_addDays : (Js.Date.t, float) => Js.Date.t = "date-fns/add_days";
+[@bs.module] external internal_addWeeks : (Js.Date.t, float) => Js.Date.t = "date-fns/add_weeks";
+[@bs.module] external internal_addMonths : (Js.Date.t, float) => Js.Date.t = "date-fns/add_months";
+[@bs.module] external internal_addQuarters : (Js.Date.t, float) => Js.Date.t = "date-fns/add_quarters";
+[@bs.module] external internal_addYears : (Js.Date.t, float) => Js.Date.t = "date-fns/add_years";
+[@bs.module] external internal_addISOYears : (Js.Date.t, float) => Js.Date.t = "date-fns/add_iso_years";
 
-// Hour Helpers
-[@bs.module "date-fns/addHours"] external addHours: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addHours"] external addHoursf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInHours"]
-external differenceInHours: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInHours"]
-external differenceInHoursf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/endOfHour"] external endOfHour: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getHours"] external getHours: Js.Date.t => int = "default";
-[@bs.module "date-fns/getHours"] external getHoursf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameHour"] external isSameHour: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisHour"] external isThisHour: Js.Date.t => bool = "default";
-[@bs.module "date-fns/setHours"] external setHours: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setHours"] external setHoursf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfHour"] external startOfHour: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subHours"] external subHours: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subHours"] external subHoursf: (Js.Date.t, float) => Js.Date.t = "default";
+let addMilliseconds = flip(internal_addMilliseconds);
+let addSeconds = flip(internal_addSeconds);
+let addMinutes = flip(internal_addMinutes);
+let addHours = flip(internal_addHours);
+let addDays = flip(internal_addDays);
+let addWeeks = flip(internal_addWeeks);
+let addMonths = flip(internal_addMonths);
+let addQuarters = flip(internal_addQuarters);
+let addYears = flip(internal_addYears);
+let addISOYears = flip(internal_addISOYears);
 
-// Day Helpers
-[@bs.module "date-fns/addBusinessDays"] external addBusinessDays: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addBusinessDays"]
-external addBusinessDaysf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/addDays"] external addDays: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addDays"] external addDaysf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInBusinessDays"]
-external differenceInBusinessDays: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInBusinessDays"]
-external differenceInBusinessDaysf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/differenceInCalendarDays"]
-external differenceInCalendarDays: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarDays"]
-external differenceInCalendarDaysf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/differenceInDays"]
-external differenceInDays: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInDays"]
-external differenceInDaysf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/endOfDay"] external endOfDay: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/endOfToday"] external endOfToday: unit => Js.Date.t = "default";
-[@bs.module "date-fns/endOfTomorrow"] external endOfTomorrow: unit => Js.Date.t = "default";
-[@bs.module "date-fns/endOfYesterday"] external endOfYesterday: unit => Js.Date.t = "default";
-[@bs.module "date-fns/getDate"] external getDate: Js.Date.t => int = "default";
-[@bs.module "date-fns/getDate"] external getDatef: Js.Date.t => float = "default";
-[@bs.module "date-fns/getDayOfYear"] external getDayOfYear: Js.Date.t => int = "default";
-[@bs.module "date-fns/getDayOfYear"] external getDayOfYearf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameDay"] external isSameDay: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isToday"] external isToday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isTomorrow"] external isTomorrow: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isYesterday"] external isYesterday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/setDate"] external setDate: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setDate"] external setDatef: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/setDayOfYear"] external setDayOfYear: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setDayOfYear"] external setDayOfYearf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfDay"] external startOfDay: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/startOfToday"] external startOfToday: unit => Js.Date.t = "default";
-[@bs.module "date-fns/startOfTomorrow"] external startOfTomorrow: unit => Js.Date.t = "default";
-[@bs.module "date-fns/startOfYesterday"] external startOfYesterday: unit => Js.Date.t = "default";
-[@bs.module "date-fns/subBusinessDays"] external subBusinessDays: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subBusinessDays"]
-external subBusinessDaysf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/subDays"] external subDays: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subDays"] external subDaysf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external isThisSecond : Js.Date.t => bool = "date-fns/is_this_second";
+[@bs.module] external isThisMinute : Js.Date.t => bool = "date-fns/is_this_minute";
+[@bs.module] external isThisHour : Js.Date.t => bool = "date-fns/is_this_hour";
+[@bs.module] external isToday : Js.Date.t => bool = "date-fns/is_today";
+[@bs.module] external isYesterday : Js.Date.t => bool = "date-fns/is_yesterday";
+[@bs.module] external isTomorrow : Js.Date.t => bool = "date-fns/is_tomorrow";
+[@bs.module] external isThisWeek : Js.Date.t => bool = "date-fns/is_this_week";
+[@bs.module] external isThisISOWeek : Js.Date.t => bool = "date-fns/is_this_iso_week";
+[@bs.module] external isThisMonth : Js.Date.t => bool = "date-fns/is_this_month";
+[@bs.module] external isThisQuarter : Js.Date.t => bool = "date-fns/is_this_quarter";
+[@bs.module] external isThisYear : Js.Date.t => bool = "date-fns/is_this_year";
+[@bs.module] external isThisISOYear : Js.Date.t => bool = "date-fns/is_this_iso_year";
 
-// Weekday Helpers
-[@bs.module "date-fns/getDay"] external getDay: Js.Date.t => int = "default";
-[@bs.module "date-fns/getDay"] external getDayf: Js.Date.t => float = "default";
-[@bs.module "date-fns/getISODay"] external getISODay: Js.Date.t => int = "default";
-[@bs.module "date-fns/getISODay"] external getISODayf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isFriday"] external isFriday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isMonday"] external isMonday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isSaturday"] external isSaturday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isSunday"] external isSunday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isThursday"] external isThursday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isTuesday"] external isTuesday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isWednesday"] external isWednesday: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isWeekend"] external isWeekend: Js.Date.t => bool = "default";
-[@bs.module "date-fns/setDay"] external setDay: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setDay"] external setDayf: (Js.Date.t, float) => Js.Date.t = "default";
-type setDayOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-};
-[@bs.module "date-fns/setDay"] external setDayOpt: (Js.Date.t, int, setDayOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/setDay"]
-external setDayOptf: (Js.Date.t, float, setDayOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/setISODay"] external setISODay: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setISODay"] external setISODayf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external isSameSecond : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_second";
+[@bs.module] external isSameMinute : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_minute";
+[@bs.module] external isSameHour : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_hour";
+[@bs.module] external isSameDay : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_day";
+[@bs.module] external isSameWeek : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_week";
+[@bs.module] external isSameISOWeek : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_iso_week";
+[@bs.module] external isSameMonth : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_month";
+[@bs.module] external isSameQuarter : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_quarter";
+[@bs.module] external isSameYear : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_year";
+[@bs.module] external isSameISOYear : (Js.Date.t, Js.Date.t) => bool = "date-fns/is_same_iso_year";
 
-// Week Helpers
-type weekOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-};
-[@bs.module "date-fns/addWeeks"] external addWeeks: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addWeeks"] external addWeeksf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInCalendarWeeks"]
-external differenceInCalendarWeeks: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarWeeks"]
-external differenceInCalendarWeeksOpt: (Js.Date.t, Js.Date.t, weekOptions) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarWeeks"]
-external differenceInCalendarWeeksf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-external differenceInCalendarWeeksOptf: (Js.Date.t, Js.Date.t, weekOptions) => float =
-  "date-fns/differenceInCalendarWeeks";
-[@bs.module "date-fns/differenceInWeeks"]
-external differenceInWeeks: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInWeeks"]
-external differenceInWeeksf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/endOfWeek"] external endOfWeek: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/endOfWeek"] external endOfWeekOpt: (Js.Date.t, weekOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/getWeek"] external getWeek: Js.Date.t => int = "default";
-[@bs.module "date-fns/getWeek"] external getWeekf: Js.Date.t => float = "default";
-type getWeekOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-  firstWeekContainsDate: option(int),
-};
-[@bs.module "date-fns/getWeek"] external getWeekOpt: (Js.Date.t, getWeekOptions) => int = "default";
-[@bs.module "date-fns/getWeek"] external getWeekOptf: (Js.Date.t, getWeekOptions) => float = "default";
-[@bs.module "date-fns/getWeekOfMonth"] external getWeekOfMonth: Js.Date.t => int = "default";
-[@bs.module "date-fns/getWeekOfMonth"] external getWeekOfMonthf: Js.Date.t => float = "default";
-external getWeekOfMonthOpt: (Js.Date.t, weekOptions) => int = "date-fns/getWeekOfMonth";
-[@bs.module "date-fns/getWeekOfMonth"]
-external getWeekOfMonthOptf: (Js.Date.t, weekOptions) => float = "default";
-[@bs.module "date-fns/getWeeksInMonth"] external getWeeksInMonth: Js.Date.t => int = "default";
-[@bs.module "date-fns/getWeeksInMonth"] external getWeeksInMonthf: Js.Date.t => float = "default";
-external getWeeksInMonthOpt: (Js.Date.t, weekOptions) => int = "date-fns/getWeeksInMonth";
-[@bs.module "date-fns/getWeeksInMonth"]
-external getWeeksInMonthOptf: (Js.Date.t, weekOptions) => float = "default";
-[@bs.module "date-fns/isSameWeek"] external isSameWeek: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isSameWeek"]
-external isSameWeekOpt: (Js.Date.t, Js.Date.t, weekOptions) => bool = "default";
-[@bs.module "date-fns/isThisWeek"] external isThisWeek: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isThisWeek"] external isThisWeekOpt: (Js.Date.t, weekOptions) => bool = "default";
-[@bs.module "date-fns/lastDayOfWeek"] external lastDayOfWeek: Js.Date.t = "default";
-[@bs.module "date-fns/lastDayOfWeek"] external lastDayOfWeekOpt: (Js.Date.t, weekOptions) = "default";
-[@bs.module "date-fns/setWeek"] external setWeek: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setWeek"] external setWeekf: (Js.Date.t, float) => Js.Date.t = "default";
-type setWeekOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-  firstWeekContainsDate: option(int),
-};
-[@bs.module "date-fns/setWeek"]
-external setWeekOpt: (Js.Date.t, int, setWeekOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/setWeek"]
-external setWeekOptf: (Js.Date.t, float, setWeekOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfWeek"] external startOfWeek: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/startOfWeek"]
-external startOfWeekOpt: (Js.Date.t, weekOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/subWeeks"] external subWeeks: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subWeeks"] external subWeeksf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external isMonday : Js.Date.t => bool = "date-fns/is_monday";
+[@bs.module] external isTuesday : Js.Date.t => bool = "date-fns/is_tuesday";
+[@bs.module] external isWednesday : Js.Date.t => bool = "date-fns/is_wednesday";
+[@bs.module] external isThursday : Js.Date.t => bool = "date-fns/is_thursday";
+[@bs.module] external isFriday : Js.Date.t => bool = "date-fns/is_friday";
+[@bs.module] external isSaturday : Js.Date.t => bool = "date-fns/is_saturday";
+[@bs.module] external isSunday : Js.Date.t => bool = "date-fns/is_sunday";
+[@bs.module] external isWeekend : Js.Date.t => bool = "date-fns/is_weekend";
 
-// ISO Week Helpers
-[@bs.module "date-fns/differenceInCalendarISOWeeks"]
-external differenceInCalendarISOWeeks: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarISOWeeks"]
-external differenceInCalendarISOWeeksf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/endOfISOWeek"] external endOfISOWeek: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getISOWeek"] external getISOWeek: Js.Date.t => int = "default";
-[@bs.module "date-fns/getISOWeek"] external getISOWeekf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameISOWeek"] external isSameISOWeek: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisISOWeek"] external isThisISOWeek: Js.Date.t => bool = "default";
-[@bs.module "date-fns/lastDayOfISOWeek"] external lastDayOfISOWeek: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/setISOWeek"] external setISOWeek: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setISOWeek"] external setISOWeekf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfISOWeek"] external startOfISOWeek: Js.Date.t => Js.Date.t = "default";
+[@bs.module] external differenceInMilliseconds : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_milliseconds";
+[@bs.module] external differenceInSeconds : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_seconds";
+[@bs.module] external differenceInMinutes : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_minutes";
+[@bs.module] external differenceInHours : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_hours";
+[@bs.module] external differenceInCalendarDays : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_days";
+[@bs.module] external differenceInDays : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_days";
+[@bs.module] external differenceInCalendarWeeks : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_weeks";
+[@bs.module] external differenceInWeeks : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_weeks";
+[@bs.module] external differenceInCalendarISOWeeks : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_iso_weeks";
+[@bs.module] external differenceInCalendarMonths : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_months";
+[@bs.module] external differenceInMonths : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_months";
+[@bs.module] external differenceInCalendarQuarters : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_quarters";
+[@bs.module] external differenceInQuarters : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_quarters";
+[@bs.module] external differenceInYears : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_years";
+[@bs.module] external differenceInISOYears : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_iso_years";
+[@bs.module] external differenceInCalendarYears : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_years";
+[@bs.module] external differenceInCalendarISOYears : (Js.Date.t, Js.Date.t) => float = "date-fns/difference_in_calendar_iso_years";
 
-// Month Helpers
-[@bs.module "date-fns/addMonths"] external addMonths: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addMonths"] external addMonthsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInCalendarMonths"]
-external differenceInCalendarMonths: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarMonths"]
-external differenceInCalendarMonthsf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/differenceInMonths"]
-external differenceInMonths: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInMonths"]
-external differenceInMonthsf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/eachWeekendOfMonth"]
-external eachWeekendOfMonth: Js.Date.t => array(Js.Date.t) = "default";
-[@bs.module "date-fns/endOfMonth"] external endOfMonth: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getDaysInMonth"] external getDaysInMonth: Js.Date.t => int = "default";
-[@bs.module "date-fns/getDaysInMonth"] external getDaysInMonthf: Js.Date.t => float = "default";
-[@bs.module "date-fns/getMonth"] external getMonth: Js.Date.t => int = "default";
-[@bs.module "date-fns/getMonth"] external getMonthf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isFirstDayOfMonth"] external isFirstDayOfMonth: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isLastDayOfMonth"] external isLastDayOfMonth: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isSameMonth"] external isSameMonth: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisMonth"] external isThisMonth: Js.Date.t => bool = "default";
-[@bs.module "date-fns/lastDayOfMonth"] external lastDayOfMonth: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/setMonth"] external setMonth: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setMonth"] external setMonthf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfMonth"] external startOfMonth: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subMonths"] external subMonths: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subMonths"] external subMonthsf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external startOfSecond : Js.Date.t => Js.Date.t = "date-fns/start_of_second";
+[@bs.module] external endOfSecond : Js.Date.t => Js.Date.t = "date-fns/end_of_second";
+[@bs.module] external startOfMinute : Js.Date.t => Js.Date.t = "date-fns/start_of_minute";
+[@bs.module] external endOfMinute : Js.Date.t => Js.Date.t = "date-fns/end_of_minute";
+[@bs.module] external startOfHour : Js.Date.t => Js.Date.t = "date-fns/start_of_hour";
+[@bs.module] external endOfHour : Js.Date.t => Js.Date.t = "date-fns/end_of_hour";
+[@bs.module] external startOfDay : Js.Date.t => Js.Date.t = "date-fns/start_of_day";
+[@bs.module] external endOfDay : Js.Date.t => Js.Date.t = "date-fns/end_of_day";
+[@bs.module] external startOfWeek : Js.Date.t => Js.Date.t = "date-fns/start_of_week";
+[@bs.module] external endOfWeek : Js.Date.t => Js.Date.t = "date-fns/end_of_week";
+[@bs.module] external startOfISOWeek : Js.Date.t => Js.Date.t = "date-fns/start_of_iso_week";
+[@bs.module] external endOfISOWeek : Js.Date.t => Js.Date.t = "date-fns/end_of_iso_week";
+[@bs.module] external startOfMonth : Js.Date.t => Js.Date.t = "date-fns/start_of_month";
+[@bs.module] external endOfMonth : Js.Date.t => Js.Date.t = "date-fns/end_of_month";
+[@bs.module] external startOfQuarter : Js.Date.t => Js.Date.t = "date-fns/start_of_quarter";
+[@bs.module] external endOfQuarter : Js.Date.t => Js.Date.t = "date-fns/end_of_quarter";
+[@bs.module] external startOfYear : Js.Date.t => Js.Date.t = "date-fns/start_of_year";
+[@bs.module] external endOfYear : Js.Date.t => Js.Date.t = "date-fns/end_of_year";
+[@bs.module] external startOfISOYear : Js.Date.t => Js.Date.t = "date-fns/start_of_iso_year";
+[@bs.module] external endOfISOYear : Js.Date.t => Js.Date.t = "date-fns/end_of_iso_year";
 
-// Quarter Helpers
-[@bs.module "date-fns/addQuarters"] external addQuarters: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addQuarters"] external addQuartersf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInCalendarQuarters"]
-external differenceInCalendarQuarters: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarQuarters"]
-external differenceInCalendarQuartersf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/differenceInQuarters"]
-external differenceInQuarters: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInQuarters"]
-external differenceInQuartersf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/endOfQuarter"] external endOfQuarter: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getQuarter"] external getQuarter: Js.Date.t => int = "default";
-[@bs.module "date-fns/getQuarter"] external getQuarterf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameQuarter"] external isSameQuarter: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisQuarter"] external isThisQuarter: Js.Date.t => bool = "default";
-[@bs.module "date-fns/lastDayOfQuarter"] external lastDayOfQuarter: Js.Date.t => Js.Date.t = "default";
-type lastDayOfQuarterOptions = {additionalDigits: option(int)};
-external lastDayOfQuarterOpt: (Js.Date.t, lastDayOfQuarterOptions) => Js.Date.t =
-  "date-fns/lastDayOfQuarter";
-[@bs.module "date-fns/setQuarter"] external setQuarter: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setQuarter"] external setQuarterf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfQuarter"] external startOfQuarter: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subQuarters"] external subQuarters: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subQuarters"] external subQuartersf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external lastDayOfWeek : Js.Date.t => Js.Date.t = "date-fns/last_day_of_week";
+[@bs.module] external lastDayOfISOWeek : Js.Date.t => Js.Date.t = "date-fns/last_day_of_iso_week";
+[@bs.module] external lastDayOfMonth : Js.Date.t => Js.Date.t = "date-fns/last_day_of_month";
+[@bs.module] external lastDayOfQuarter : Js.Date.t => Js.Date.t = "date-fns/last_day_of_quarter";
+[@bs.module] external lastDayOfYear : Js.Date.t => Js.Date.t = "date-fns/last_day_of_year";
+[@bs.module] external lastDayOfISOYear : Js.Date.t => Js.Date.t = "date-fns/last_day_of_iso_year";
 
-// Year Helpers
-[@bs.module "date-fns/addYears"] external addYears: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addYears"] external addYearsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInCalendarYears"]
-external differenceInCalendarYears: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInCalendarYears"]
-external differenceInCalendarYearsf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/differenceInYears"]
-external differenceInYears: (Js.Date.t, Js.Date.t) => int = "default";
-[@bs.module "date-fns/differenceInYears"]
-external differenceInYearsf: (Js.Date.t, Js.Date.t) => float = "default";
-[@bs.module "date-fns/eachWeekendOfYear"]
-external eachWeekendOfYear: Js.Date.t => array(Js.Date.t) = "default";
-[@bs.module "date-fns/endOfYear"] external endOfYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getDaysInYear"] external getDaysInYear: Js.Date.t => int = "default";
-[@bs.module "date-fns/getDaysInYear"] external getDaysInYearf: Js.Date.t => float = "default";
-[@bs.module "date-fns/getYear"] external getYear: Js.Date.t => int = "default";
-[@bs.module "date-fns/getYear"] external getYearf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isLeapYear"] external isLeapYear: Js.Date.t => bool = "default";
-[@bs.module "date-fns/isSameYear"] external isSameYear: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/isThisYear"] external isThisYear: Js.Date.t => bool = "default";
-[@bs.module "date-fns/lastDayOfYear"] external lastDayOfYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/setYear"] external setYear: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setYear"] external setYearf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfYear"] external startOfYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subYears"] external subYears: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subYears"] external subYearsf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external startOfYesterday : unit => Js.Date.t = "date-fns/start_of_yesterday";
+[@bs.module] external endOfYesterday : unit => Js.Date.t = "date-fns/end_of_yesterday";
+[@bs.module] external startOfToday : unit => Js.Date.t = "date-fns/start_of_today";
+[@bs.module] external endOfToday : unit => Js.Date.t = "date-fns/end_of_today";
+[@bs.module] external startOfTomorrow : unit => Js.Date.t = "date-fns/start_of_tomorrow";
+[@bs.module] external endOfTomorrow : unit => Js.Date.t = "date-fns/end_of_tomorrow";
 
-// ISO Week-Numbering Year Helpers
-[@bs.module "date-fns/addISOWeekYears"] external addISOWeekYears: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/addISOWeekYears"]
-external addISOWeekYearsf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/differenceInCalendarISOWeekYears"]
-external differenceInCalendarISOWeekYears: (Js.Date.t, Js.Date.t) => int =
-  "default";
-external differenceInCalendarISOWeekYearsf: (Js.Date.t, Js.Date.t) => float =
-  "date-fns/differenceInCalendarISOWeekYears";
-[@bs.module "date-fns/differenceInISOWeekYears"]
-external differenceInISOWeekYears: (Js.Date.t, Js.Date.t) => int =
-  "default";
-[@bs.module "date-fns/differenceInISOWeekYears"]
-external differenceInISOWeekYearsf: (Js.Date.t, Js.Date.t) => float =
-  "default";
-[@bs.module "date-fns/endOfISOWeekYear"] external endOfISOWeekYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/getISOWeekYear"] external getISOWeekYear: Js.Date.t => int = "default";
-[@bs.module "date-fns/getISOWeekYear"] external getISOWeekYearf: Js.Date.t => float = "default";
-[@bs.module "date-fns/getISOWeeksInYear"] external getISOWeeksInYear: Js.Date.t => int = "default";
-[@bs.module "date-fns/getISOWeeksInYear"] external getISOWeeksInYearf: Js.Date.t => float = "default";
-[@bs.module "date-fns/isSameISOWeekYear"]
-external isSameISOWeekYear: (Js.Date.t, Js.Date.t) => bool = "default";
-[@bs.module "date-fns/lastDayOfISOWeekYear"]
-external lastDayOfISOWeekYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/setISOWeekYear"] external setISOWeekYear: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setISOWeekYear"] external setISOWeekYearf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/startOfISOWeekYear"] external startOfISOWeekYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/subISOWeekYears"] external subISOWeekYears: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/subISOWeekYears"]
-external subISOWeekYearsf: (Js.Date.t, float) => Js.Date.t = "default";
+[@bs.module] external isFirstDayOfMonth : Js.Date.t => bool = "date-fns/is_first_day_of_month";
+[@bs.module] external isLastDayOfMonth : Js.Date.t => bool = "date-fns/is_last_day_of_month";
+[@bs.module] external isLeapYear : Js.Date.t => bool = "date-fns/is_leap_year";
 
-// Decade Helpers
-[@bs.module "date-fns/endOfDecade"] external endOfDecade: Js.Date.t => Js.Date.t = "default";
-type endOfDecadeOptions = {additionalDigits: option(int)};
-[@bs.module "date-fns/endOfDecade"]
-external endOfDecadeOpt: (Js.Date.t, endOfDecadeOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/getDecade"] external getDecade: Js.Date.t => int = "default";
-[@bs.module "date-fns/getDecade"] external getDecadef: Js.Date.t => float = "default";
-[@bs.module "date-fns/lastDayOfDecade"] external lastDayOfDecade: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/startOfDecade"] external startOfDecade: Js.Date.t => Js.Date.t = "default";
-
-// Week-Numbering Year Helpers
-type weekYearOptions = {
-  locale: option(locale),
-  weekStartsOn: option(int),
-  firstWeekContainsDate: option(int),
-};
-[@bs.module "date-fns/getWeekYear"] external getWeekYear: Js.Date.t => int = "default";
-[@bs.module "date-fns/getWeekYear"] external getWeekYearOpt: (Js.Date.t, weekYearOptions) => int = "default";
-[@bs.module "date-fns/getWeekYear"] external getWeekYearf: Js.Date.t => float = "default";
-[@bs.module "date-fns/getWeekYear"]
-external getWeekYearOptf: (Js.Date.t, weekYearOptions) => float = "default";
-[@bs.module "date-fns/setWeekYear"] external setWeekYear: (Js.Date.t, int) => Js.Date.t = "default";
-[@bs.module "date-fns/setWeekYear"]
-external setWeekYearOpt: (Js.Date.t, int, weekYearOptions) => Js.Date.t = "default";
-[@bs.module "date-fns/setWeekYear"] external setWeekYearf: (Js.Date.t, float) => Js.Date.t = "default";
-[@bs.module "date-fns/setWeekYear"]
-external setWeekYearOptf: (Js.Date.t, float, weekYearOptions) => Js.Date.t =
-  "default";
-[@bs.module "date-fns/startOfWeekYear"] external startOfWeekYear: Js.Date.t => Js.Date.t = "default";
-[@bs.module "date-fns/startOfWeekYear"]
-external startOfWeekYearOpt: (Js.Date.t, weekYearOptions) => Js.Date.t =
-  "default";
+[@bs.module] external eachDay : (Js.Date.t, Js.Date.t) => array(Js.Date.t) = "date-fns/each_day";

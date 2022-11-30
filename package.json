@@ -1,6 +1,6 @@
 {
-  "name": "bs-date-fns",
-  "version": "1.0.0-alpha.3",
+  "name": "@atvero/bs-date-fns",
+  "version": "0.1.6",
   "description": "Bucklescript bindings to date-fns",
   "scripts": {
     "bs-build": "bsb -clean-world -make-world",
@@ -23,5 +23,9 @@
   },
   "devDependencies": {
     "bs-platform": "^8.0.3"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
   }
 }
